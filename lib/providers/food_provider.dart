@@ -10,6 +10,7 @@ class FoodProvider with ChangeNotifier {
   List<models.Category> _categories = [];
   List<Restaurant> _restaurants = [];
   String _selectedCategory = 'all';
+  String _searchQuery = '';
 
   FoodProvider() {
     _loadData();
@@ -26,6 +27,24 @@ class FoodProvider with ChangeNotifier {
 
   // Getter untuk selected category
   String get selectedCategory => _selectedCategory;
+
+  // Getter untuk search query
+  String get searchQuery => _searchQuery;
+
+  // Getter untuk search results
+  List<FoodItem> get searchResults {
+    if (_searchQuery.isEmpty) return [];
+    return _foodItems
+        .where((item) =>
+            item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            item.category.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
 
   // Getter untuk top buyers choice (rating tertinggi)
   List<FoodItem> get topBuyersChoice {

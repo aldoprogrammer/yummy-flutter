@@ -17,6 +17,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentNavIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,24 +34,30 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // Header dengan location dan notification
             _buildHeader(),
-            // Search bar dan filter
             _buildSearchSection(),
-            // Categories
-            _buildCategoriesSection(),
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            Consumer<FoodProvider>(
+              builder: (context, foodProvider, _) {
+                if (foodProvider.searchQuery.isNotEmpty) {
+                  return Expanded(child: _buildSearchResults(foodProvider));
+                }
+                return Column(
                   children: [
-                    // Top Buyers' Choice section
-                    _buildTopBuyersChoiceSection(),
-                    // Explore Healthy section
-                    _buildExploreHealthySection(),
-                    const SizedBox(height: 100), // Space untuk cart footer
+                    _buildCategoriesSection(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTopBuyersChoiceSection(),
+                            _buildExploreHealthySection(),
+                            const SizedBox(height: 100),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),
@@ -138,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -155,13 +168,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icon(Icons.search, color: Colors.grey.shade600, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      'Search Avocado, Almonds, Broccoli...',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        context.read<FoodProvider>().setSearchQuery(value);
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search Avocado, Almonds, Broccoli...',
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                        border: InputBorder.none,
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? GestureDetector(
+                                onTap: () {
+                                  _searchController.clear();
+                                  context.read<FoodProvider>().setSearchQuery('');
+                                },
+                                child: Icon(Icons.close, color: Colors.grey.shade600, size: 18),
+                              )
+                            : null,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -279,6 +307,37 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchResults(FoodProvider foodProvider) {
+    final results = foodProvider.searchResults;
+    if (results.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 12),
+            Text(
+              'No results found',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final item = results[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          width: double.infinity,
+          child: FoodCard(foodItem: item),
         );
       },
     );
